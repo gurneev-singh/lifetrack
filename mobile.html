@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LifeTrack">
+<title>LifeTrack Mobile</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a18;min-height:100vh;padding-bottom:80px}
+.header{background:#fff;border-bottom:0.5px solid #e8e6e0;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600}
+.online-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block}
+.online-dot.on{background:#639922;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.section{padding:16px 16px 0}
+.section-title{font-size:10px;font-weight:700;color:#888780;letter-spacing:.08em;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.metric{background:#fff;border-radius:10px;border:0.5px solid #e8e6e0;padding:14px;text-align:center}
+.metric-val{font-size:22px;font-weight:700;margin-bottom:2px}
+.metric-lbl{font-size:10px;color:#888780}
+.card{background:#fff;border-radius:12px;border:0.5px solid #e8e6e0;padding:14px 16px;margin-bottom:12px}
+.big-btn{width:100%;padding:16px;border-radius:12px;border:none;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;transition:transform .1s,opacity .1s}
+.big-btn:active{transform:scale(0.97);opacity:.85}
+.btn-mic{background:#1a1a18;color:#fff}
+.btn-mood{background:#f5f4f0;color:#1a1a18;border:0.5px solid #e8e6e0}
+.btn-note{background:#f5f4f0;color:#1a1a18;border:0.5px solid #e8e6e0}
+.mood-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.mood-btn{padding:14px 8px;border-radius:10px;border:0.5px solid #e8e6e0;background:#fff;font-size:22px;cursor:pointer;text-align:center;transition:all .15s}
+.mood-btn:active{transform:scale(0.95)}
+.mood-btn.selected{border:2px solid #1a1a18;background:#f5f4f0}
+.mood-lbl{font-size:10px;color:#888780;margin-top:4px}
+textarea{width:100%;border:0.5px solid #e8e6e0;border-radius:8px;padding:12px;font-size:14px;font-family:inherit;resize:none;background:#fff;color:#1a1a18;outline:none;min-height:90px}
+textarea:focus{border-color:#1a1a18}
+.submit-btn{width:100%;padding:13px;border-radius:10px;border:none;background:#1a1a18;color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px}
+.submit-btn:active{opacity:.8}
+.submit-btn:disabled{background:#ccc;cursor:not-allowed}
+.queue-item{padding:10px 0;border-bottom:0.5px solid #f1efe8;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.queue-item:last-child{border-bottom:none}
+.queue-text{font-size:12px;color:#444441;line-height:1.5;flex:1}
+.queue-time{font-size:10px;color:#888780;white-space:nowrap;margin-top:1px}
+.queue-badge{font-size:10px;padding:1px 6px;border-radius:4px;margin-right:4px}
+.qb-voice{background:#E6F1FB;color:#0C447C}
+.qb-mood{background:#EEEDFE;color:#3C3489}
+.qb-note{background:#EAF3DE;color:#27500A}
+.qb-pending{background:#FAEEDA;color:#633806}
+.qb-synced{background:#EAF3DE;color:#27500A}
+.recording{background:#FCEBEB;border:0.5px solid #F7C1C1;border-radius:10px;padding:14px;text-align:center;display:none}
+.recording.active{display:block}
+.rec-dot{width:12px;height:12px;border-radius:50%;background:#E24B4A;display:inline-block;animation:pulse .8s infinite;margin-right:6px}
+.rec-time{font-size:24px;font-weight:700;color:#A32D2D;margin:8px 0}
+.stop-btn{background:#E24B4A;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
+.ai-box{border-left:3px solid #7F77DD;padding:10px 14px;background:#EEEDFE;border-radius:0;font-size:12px;color:#26215C;line-height:1.7}
+.nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:0.5px solid #e8e6e0;display:flex;padding:8px 0 20px}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 0;border:none;background:none;color:#888780;font-size:10px;font-weight:500}
+.nav-btn.active{color:#1a1a18}
+.nav-icon{font-size:20px}
+.page{display:none}
+.page.active{display:block}
+.sync-banner{background:#EAF3DE;color:#27500A;font-size:12px;padding:8px 16px;text-align:center;font-weight:500}
+.sync-banner.warn{background:#FAEEDA;color:#633806}
+.empty{text-align:center;color:#888780;font-size:13px;padding:32px 16px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>LifeTrack</h1>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="online-dot" id="dot"></span>
+    <span style="font-size:11px;color:#888780" id="conn-status">Connecting...</span>
+  </div>
+</div>
+
+<div id="sync-bar"></div>
+
+<!-- PAGE 1: CAPTURE -->
+<div class="page active" id="page-capture">
+  <div class="section" style="padding-top:16px">
+    <div class="section-title">QUICK CAPTURE</div>
+
+    <button class="big-btn btn-mic" onclick="startVoice()">
+      <span style="font-size:20px">🎙</span> Voice note
+    </button>
+
+    <div class="recording" id="rec-box">
+      <div><span class="rec-dot"></span><span style="font-size:13px;color:#A32D2D;font-weight:500">Recording...</span></div>
+      <div class="rec-time" id="rec-timer">0:00</div>
+      <button class="stop-btn" onclick="stopVoice()">Stop & Save</button>
+    </div>
+
+    <div class="section-title" style="margin-top:16px">MOOD CHECK-IN</div>
+    <div class="mood-grid">
+      <div class="mood-btn" onclick="selectMood('great',this)">
+        <div style="font-size:28px">😄</div>
+        <div class="mood-lbl">Great</div>
+      </div>
+      <div class="mood-btn" onclick="selectMood('okay',this)">
+        <div style="font-size:28px">😐</div>
+        <div class="mood-lbl">Okay</div>
+      </div>
+      <div class="mood-btn" onclick="selectMood('bad',this)">
+        <div style="font-size:28px">😞</div>
+        <div class="mood-lbl">Bad</div>
+      </div>
+      <div class="mood-btn" onclick="selectMood('focused',this)">
+        <div style="font-size:28px">🎯</div>
+        <div class="mood-lbl">Focused</div>
+      </div>
+      <div class="mood-btn" onclick="selectMood('tired',this)">
+        <div style="font-size:28px">😴</div>
+        <div class="mood-lbl">Tired</div>
+      </div>
+      <div class="mood-btn" onclick="selectMood('stressed',this)">
+        <div style="font-size:28px">😤</div>
+        <div class="mood-lbl">Stressed</div>
+      </div>
+    </div>
+
+    <div class="section-title">QUICK NOTE</div>
+    <div class="card" style="padding:12px">
+      <textarea id="note-input" placeholder="What are you working on? Where are you? Any context..." rows="3"></textarea>
+      <button class="submit-btn" onclick="saveNote()" id="note-btn">Save note</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: TODAY -->
+<div class="page" id="page-today">
+  <div class="section" style="padding-top:16px">
+    <div class="section-title">TODAY AT A GLANCE</div>
+    <div class="grid2" id="mobile-stats">
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Study time</div></div>
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Focus score</div></div>
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Distraction</div></div>
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Break</div></div>
+    </div>
+
+    <div class="section-title">AI COACH</div>
+    <div class="card" style="padding:0">
+      <div class="ai-box" id="mobile-ai">Connect to WiFi to load your coaching report.</div>
+    </div>
+
+    <div class="section-title" style="margin-top:14px">TOP APPS</div>
+    <div class="card" id="mobile-apps">
+      <div class="empty">Connect to WiFi to load data.</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: QUEUE -->
+<div class="page" id="page-queue">
+  <div class="section" style="padding-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="section-title" style="margin:0">OFFLINE QUEUE</div>
+      <button onclick="syncNow()" style="font-size:11px;color:#1a1a18;border:0.5px solid #e8e6e0;background:#fff;padding:4px 10px;border-radius:6px;cursor:pointer">Sync now</button>
+    </div>
+    <div class="card" id="queue-list">
+      <div class="empty">No pending items. Everything is synced.</div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('capture',this)" id="nav-capture">
+    <span class="nav-icon">+</span>Capture
+  </button>
+  <button class="nav-btn" onclick="showPage('today',this)" id="nav-today">
+    <span class="nav-icon">📊</span>Today
+  </button>
+  <button class="nav-btn" onclick="showPage('queue',this)" id="nav-queue">
+    <span class="nav-icon">☁</span>Queue
+  </button>
+</div>
+
+<script>
+const SERVER = window.location.origin;
+let isOnline = false;
+let queue = JSON.parse(localStorage.getItem('lt_queue') || '[]');
+let selectedMood = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let recInterval = null;
+let recSeconds = 0;
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'today') loadTodayMobile();
+  if (name === 'queue') renderQueue();
+}
+
+// ─── Connection check ─────────────────────────────────────────────────────────
+async function checkConnection() {
+  try {
+    const r = await fetch(SERVER + '/api/live', {signal: AbortSignal.timeout(3000)});
+    if (r.ok) {
+      isOnline = true;
+      document.getElementById('dot').className = 'online-dot on';
+      document.getElementById('conn-status').textContent = 'Connected';
+      showSyncBar('Connected to laptop', false);
+      syncQueue();
+    }
+  } catch {
+    isOnline = false;
+    document.getElementById('dot').className = 'online-dot';
+    document.getElementById('conn-status').textContent = 'Offline';
+    showSyncBar(queue.filter(q=>q.status==='pending').length + ' items waiting to sync', true);
+  }
+}
+
+function showSyncBar(msg, warn) {
+  const bar = document.getElementById('sync-bar');
+  bar.className = 'sync-banner' + (warn ? ' warn' : '');
+  bar.textContent = msg;
+  if (!warn) setTimeout(() => bar.textContent = '', 3000);
+}
+
+// ─── Voice recording ──────────────────────────────────────────────────────────
+async function startVoice() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    recSeconds = 0;
+
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(recInterval);
+      document.getElementById('rec-box').classList.remove('active');
+
+      // Convert to base64 for storage
+      const blob = new Blob(audioChunks, {type:'audio/webm'});
+      const reader = new FileReader();
+      reader.onload = () => {
+        addToQueue({
+          type: 'voice',
+          data: reader.result,
+          duration: recSeconds,
+          note: `Voice note — ${recSeconds}s`
+        });
+      };
+      reader.readAsDataURL(blob);
+    };
+
+    mediaRecorder.start();
+    document.getElementById('rec-box').classList.add('active');
+    recInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds/60);
+      const s = recSeconds % 60;
+      document.getElementById('rec-timer').textContent = m + ':' + String(s).padStart(2,'0');
+    }, 1000);
+
+  } catch(e) {
+    alert('Microphone access denied. Please allow mic access in Safari settings.');
+  }
+}
+
+function stopVoice() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+}
+
+// ─── Mood ─────────────────────────────────────────────────────────────────────
+function selectMood(mood, el) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedMood = mood;
+  addToQueue({type: 'mood', mood: mood, note: `Mood: ${mood}`});
+  setTimeout(() => {
+    el.classList.remove('selected');
+    selectedMood = null;
+  }, 1500);
+}
+
+// ─── Text note ────────────────────────────────────────────────────────────────
+function saveNote() {
+  const text = document.getElementById('note-input').value.trim();
+  if (!text) return;
+  addToQueue({type: 'note', note: text});
+  document.getElementById('note-input').value = '';
+  showSyncBar('Note saved!', false);
+}
+
+// ─── Queue management ─────────────────────────────────────────────────────────
+function addToQueue(item) {
+  const entry = {
+    ...item,
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    status: 'pending'
+  };
+  queue.unshift(entry);
+  saveQueue();
+  renderQueue();
+  showSyncBar('Saved' + (isOnline ? ' — syncing...' : ' offline, will sync later'), !isOnline);
+  if (isOnline) syncQueue();
+}
+
+function saveQueue() {
+  // Keep only last 100 items and don't store audio data long term
+  const trimmed = queue.slice(0, 100).map(q => ({
+    ...q,
+    data: q.type === 'voice' ? '[audio]' : q.data
+  }));
+  localStorage.setItem('lt_queue', JSON.stringify(trimmed));
+}
+
+function renderQueue() {
+  const el = document.getElementById('queue-list');
+  if (queue.length === 0) {
+    el.innerHTML = '<div class="empty">No pending items. Everything is synced.</div>';
+    return;
+  }
+  el.innerHTML = queue.slice(0, 20).map(q => {
+    const time = new Date(q.timestamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    const typeClass = {voice:'qb-voice', mood:'qb-mood', note:'qb-note'}[q.type] || '';
+    const statusClass = q.status === 'synced' ? 'qb-synced' : 'qb-pending';
+    return `<div class="queue-item">
+      <div style="flex:1">
+        <span class="queue-badge ${typeClass}">${q.type}</span>
+        <span class="queue-badge ${statusClass}">${q.status}</span>
+        <div class="queue-text">${q.note || q.mood || 'entry'}</div>
+      </div>
+      <div class="queue-time">${time}</div>
+    </div>`;
+  }).join('');
+}
+
+async function syncQueue() {
+  const pending = queue.filter(q => q.status === 'pending');
+  if (!pending.length || !isOnline) return;
+
+  for (const item of pending) {
+    try {
+      const r = await fetch(SERVER + '/api/mobile/log', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          type: item.type,
+          note: item.note,
+          mood: item.mood,
+          timestamp: item.timestamp,
+          duration: item.duration
+        })
+      });
+      if (r.ok) {
+        const idx = queue.findIndex(q => q.id === item.id);
+        if (idx !== -1) queue[idx].status = 'synced';
+      }
+    } catch { break; }
+  }
+  saveQueue();
+  renderQueue();
+}
+
+function syncNow() {
+  checkConnection();
+}
+
+// ─── Today's stats (mobile view) ─────────────────────────────────────────────
+async function loadTodayMobile() {
+  if (!isOnline) return;
+  try {
+    const r = await fetch(SERVER + '/api/today');
+    const d = await r.json();
+
+    document.getElementById('mobile-stats').innerHTML = `
+      <div class="metric"><div class="metric-val" style="color:#3B6D11">${d.study_fmt}</div><div class="metric-lbl">Study time</div></div>
+      <div class="metric"><div class="metric-val" style="color:#534AB7">${d.focus_score}/100</div><div class="metric-lbl">Focus score</div></div>
+      <div class="metric"><div class="metric-val" style="color:#A32D2D">${d.distraction_fmt}</div><div class="metric-lbl">Distraction</div></div>
+      <div class="metric"><div class="metric-val" style="color:#854F0B">${d.break_fmt}</div><div class="metric-lbl">Break</div></div>
+    `;
+
+    document.getElementById('mobile-ai').textContent = d.ai_report;
+
+    const maxMins = d.top_apps.length ? d.top_apps[0].mins : 1;
+    const colors = ['#639922','#378ADD','#E24B4A','#BA7517','#534AB7'];
+    document.getElementById('mobile-apps').innerHTML = d.top_apps.length
+      ? d.top_apps.map((a,i) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="font-size:12px;color:#1a1a18;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.app}</span>
+          <div style="flex:1;background:#f1efe8;border-radius:3px;height:6px">
+            <div style="width:${Math.round((a.mins/maxMins)*100)}%;background:${colors[i]||'#888'};height:6px;border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;color:#888780;min-width:36px;text-align:right">${a.fmt}</span>
+        </div>`).join('')
+      : '<div class="empty">No data yet.</div>';
+
+  } catch(e) {
+    document.getElementById('mobile-ai').textContent = 'Could not load data. Make sure laptop server is running.';
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+checkConnection();
+setInterval(checkConnection, 30000);
+renderQueue();
+</script>
+</body>
+</html>
