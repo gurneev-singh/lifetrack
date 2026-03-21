@@ -1,0 +1,24 @@
+# Database (contains your personal data)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Config with real API key
+config.py
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
