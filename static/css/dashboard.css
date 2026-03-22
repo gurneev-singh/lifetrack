@@ -63,3 +63,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ss-show-more{width:100%;padding:8px;border:0.5px solid #e8e6e0;border-radius:8px;background:#f5f4f0;font-size:12px;color:#888780;cursor:pointer;margin-top:8px}
 .ss-show-more:hover{background:#eeede8;color:#1a1a18}
 .empty{color:#888780;font-size:12px;padding:16px 0;text-align:center}
+
+/* Time range selector */
+.time-range-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.time-range-label{font-size:11px;color:#888780;font-weight:500}
+.time-input{border:0.5px solid #e8e6e0;border-radius:6px;padding:4px 8px;font-size:12px;color:#1a1a18;background:#fff;outline:none;width:110px}
+.time-input:focus{border-color:#1a1a18}
+.btn-apply{font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:#1a1a18;color:#fff;cursor:pointer}
+.btn-apply:hover{opacity:.85}
+.btn-clear{font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid #e8e6e0;background:#fff;color:#888780;cursor:pointer}
+.btn-clear:hover{background:#f5f4f0;color:#1a1a18}

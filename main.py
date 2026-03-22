@@ -4,12 +4,12 @@ import threading
 import schedule
 import time
 from datetime import datetime
-from database import init_db, log_screenshot
-from tracker import run_tracker
-from reporter import generate_daily_report
-from screenshot_analyzer import run_screenshot_analyzer
-from privacy import start_hotkey_listener, is_night_time
-from config import REPORT_HOUR, REPORT_MINUTE
+from core.database import init_db, log_screenshot
+from features.tracking.tracker import run_tracker
+from features.reporting.reporter import generate_daily_report
+from features.tracking.screenshot_analyzer import run_screenshot_analyzer
+from core.privacy import start_hotkey_listener, is_night_time
+from core.config import REPORT_HOUR, REPORT_MINUTE
 
 def schedule_daily_report():
     t = f"{REPORT_HOUR:02d}:{REPORT_MINUTE:02d}"

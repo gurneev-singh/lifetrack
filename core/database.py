@@ -1,7 +1,7 @@
 # LifeTrack - database.py
 import sqlite3
 from datetime import datetime
-from config import DB_PATH
+from core.config import DB_PATH
 
 
 def get_connection():

@@ -9,8 +9,8 @@ import platform
 from datetime import datetime
 from PIL import ImageGrab, Image
 from groq import Groq
-from config import GROQ_API_KEY, SCREENSHOT_INTERVAL
-from privacy import is_paused, is_blacklisted_app, get_active_app
+from core.config import GROQ_API_KEY, SCREENSHOT_INTERVAL
+from core.privacy import is_paused, is_blacklisted_app, get_active_app
 
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY != "your_groq_api_key_here" else None
 

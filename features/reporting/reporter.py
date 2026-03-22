@@ -1,6 +1,6 @@
 from datetime import datetime
-from config import GROQ_API_KEY, GROQ_MODEL
-from database import (get_today_minutes_by_category, get_top_apps_today,
+from core.config import GROQ_API_KEY, GROQ_MODEL
+from core.database import (get_today_minutes_by_category, get_top_apps_today,
                       get_top_distractions_today, save_daily_summary)
 
 def fmt(minutes):

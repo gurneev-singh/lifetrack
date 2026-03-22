@@ -4,11 +4,20 @@
 
 from flask import Flask, jsonify, render_template, request
 import sqlite3
-import os
 from datetime import datetime, timedelta
-from config import DB_PATH
+from core.config import DB_PATH
 
-app = Flask(__name__)
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+app = Flask(__name__,
+    template_folder=os.path.join(ROOT, 'templates'),
+    static_folder=os.path.join(ROOT, 'static')
+)
+
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)

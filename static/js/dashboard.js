@@ -1,9 +1,11 @@
 let weekChart, scoreChart;
 let allScreenshots = [];
 let currentFilter = 'all';
-let ssExpanded = false;
+let ssExpanded = true;  // starts OPEN
 let showAll = false;
-const SHOW_LIMIT = 15;
+let timeRangeStart = null;
+let timeRangeEnd = null;
+const SHOW_LIMIT = 20;
 
 const CAT_COLORS = {study:'#639922',distraction:'#E24B4A',break:'#BA7517',idle:'#888780',unknown:'#888780'};
 const APP_COLORS = ['#639922','#378ADD','#E24B4A','#BA7517','#534AB7','#888780'];
@@ -44,23 +46,58 @@ function filterScreenshots(cat, btn) {
     renderScreenshotFeed();
 }
 
+// ─── Time range filter ────────────────────────────────────────────────────────
+function applyTimeRange() {
+    timeRangeStart = document.getElementById('time-start').value;
+    timeRangeEnd   = document.getElementById('time-end').value;
+    showAll = false;
+    renderScreenshotFeed();
+}
+
+function clearTimeRange() {
+    timeRangeStart = null;
+    timeRangeEnd   = null;
+    document.getElementById('time-start').value = '';
+    document.getElementById('time-end').value   = '';
+    renderScreenshotFeed();
+}
+
 // ─── Render screenshot feed ───────────────────────────────────────────────────
 function renderScreenshotFeed() {
-    const el = document.getElementById('screenshot-feed');
-    const countEl = document.getElementById('ss-visible-count');
+    const el       = document.getElementById('screenshot-feed');
+    const countEl  = document.getElementById('ss-visible-count');
 
     if (!allScreenshots.length) {
-        el.innerHTML = '<div class="empty">No AI descriptions yet. Make sure main.py is running with screenshot analyzer.</div>';
+        el.innerHTML = '<div class="empty">No AI descriptions yet. Make sure main.py is running with the screenshot analyzer.</div>';
         countEl.textContent = '';
         return;
     }
 
-    const filtered = currentFilter === 'all'
+    let filtered = currentFilter === 'all'
         ? allScreenshots
         : allScreenshots.filter(s => s.category === currentFilter);
 
+    // Apply time range
+    if (timeRangeStart) {
+        filtered = filtered.filter(s => {
+            const t = s.timestamp ? s.timestamp.substring(11,16) : '00:00';
+            return t >= timeRangeStart;
+        });
+    }
+    if (timeRangeEnd) {
+        filtered = filtered.filter(s => {
+            const t = s.timestamp ? s.timestamp.substring(11,16) : '23:59';
+            return t <= timeRangeEnd;
+        });
+    }
+
     const visible = showAll ? filtered : filtered.slice(0, SHOW_LIMIT);
-    countEl.textContent = `${filtered.length} entries`;
+    countEl.textContent = filtered.length + ' entries';
+
+    if (visible.length === 0) {
+        el.innerHTML = '<div class="empty">No entries match this filter.</div>';
+        return;
+    }
 
     el.innerHTML = visible.map(s => {
         const time = s.timestamp ? s.timestamp.substring(11,16) : '';
@@ -74,7 +111,6 @@ function renderScreenshotFeed() {
         </div>`;
     }).join('');
 
-    // Show more button
     if (!showAll && filtered.length > SHOW_LIMIT) {
         el.innerHTML += `<button class="ss-show-more" onclick="expandAll()">Show all ${filtered.length} entries</button>`;
     } else if (showAll && filtered.length > SHOW_LIMIT) {
@@ -82,8 +118,8 @@ function renderScreenshotFeed() {
     }
 }
 
-function expandAll() { showAll = true; renderScreenshotFeed(); }
-function collapseAll() { showAll = false; renderScreenshotFeed(); }
+function expandAll()  { showAll = true;  renderScreenshotFeed(); }
+function collapseAll(){ showAll = false; renderScreenshotFeed(); }
 
 // ─── Load today ───────────────────────────────────────────────────────────────
 async function loadToday() {
@@ -100,7 +136,7 @@ async function loadToday() {
     `;
 
     const filled = (d.focus_score/100)*176;
-    document.getElementById('score-ring').setAttribute('stroke-dasharray', `${filled} ${176-filled}`);
+    document.getElementById('score-ring').setAttribute('stroke-dasharray',`${filled} ${176-filled}`);
     document.getElementById('score-text').textContent = d.focus_score;
     document.getElementById('score-big').innerHTML = `${d.focus_score}<span style="font-size:18px;color:#888780">/100</span>`;
     document.getElementById('score-label').textContent = scoreLabel(d.focus_score);
@@ -152,15 +188,16 @@ async function loadToday() {
 
 // ─── Load screenshots ─────────────────────────────────────────────────────────
 async function loadScreenshots() {
-    const r = await fetch('/api/screenshots?limit=200');
-    allScreenshots = await r.json();
-
-    // Update count badge on header
-    document.getElementById('ss-count-badge').textContent = allScreenshots.length
-        ? `${allScreenshots.length} entries`
-        : '';
-
-    renderScreenshotFeed();
+    try {
+        const r = await fetch('/api/screenshots?limit=200');
+        allScreenshots = await r.json();
+        document.getElementById('ss-count-badge').textContent =
+            allScreenshots.length ? allScreenshots.length + ' entries' : '';
+        renderScreenshotFeed();
+    } catch(e) {
+        document.getElementById('screenshot-feed').innerHTML =
+            '<div class="empty">Could not load screenshot data.</div>';
+    }
 }
 
 // ─── Load weekly charts ───────────────────────────────────────────────────────
@@ -168,8 +205,8 @@ async function loadWeekly() {
     const r = await fetch('/api/weekly');
     const data = await r.json();
     const labels = data.map(d => d.label);
-    const study = data.map(d => Math.round(d.study/60*10)/10);
-    const dist = data.map(d => Math.round(d.distraction/60*10)/10);
+    const study  = data.map(d => Math.round(d.study/60*10)/10);
+    const dist   = data.map(d => Math.round(d.distraction/60*10)/10);
     const scores = data.map(d => d.focus_score);
 
     if (weekChart) weekChart.destroy();
@@ -204,7 +241,6 @@ async function loadWeekly() {
     });
 }
 
-// ─── Load live status ─────────────────────────────────────────────────────────
 async function loadLive() {
     try {
         const r = await fetch('/api/live');
@@ -220,6 +256,10 @@ async function loadAll() {
     await Promise.all([loadToday(), loadScreenshots(), loadWeekly(), loadLive()]);
 }
 
-loadAll();
+// Init — open section immediately
+window.onload = function() {
+    loadAll();
+};
+
 setInterval(loadLive, 60000);
 setInterval(loadAll, 300000);

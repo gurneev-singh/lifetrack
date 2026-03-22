@@ -4,9 +4,9 @@ import shutil
 import sqlite3
 import platform
 from datetime import datetime, timedelta
-from config import TRACK_INTERVAL_SECONDS, IDLE_THRESHOLD_SECONDS, CHROME_HISTORY_PATH
-from classifier import classify_window, classify_url, get_app_name_from_window
-from database import log_activity, log_browser_history
+from core.config import TRACK_INTERVAL_SECONDS, IDLE_THRESHOLD_SECONDS, CHROME_HISTORY_PATH
+from core.classifier import classify_window, classify_url, get_app_name_from_window
+from core.database import log_activity, log_browser_history
 
 _win_ok = False
 if platform.system() == "Windows":

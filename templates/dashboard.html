@@ -60,22 +60,39 @@
 
   <!-- COLLAPSIBLE AI SCREENSHOT SECTION -->
   <div class="card" style="margin-bottom:14px">
+
     <div class="ss-header" onclick="toggleScreenshots()">
       <div class="sec" style="margin:0">AI SCREENSHOT DESCRIPTIONS — WHAT YOU ACTUALLY DID TODAY</div>
       <div class="ss-toggle">
-        <span id="ss-count-badge" style="font-size:11px;color:#888780"></span>
-        <span id="ss-arrow" class="ss-arrow">▼</span>
+        <span id="ss-count-badge"></span>
+        <span id="ss-arrow" class="ss-arrow open">▼</span>
       </div>
     </div>
-    <div class="ss-body" id="ss-body">
+
+    <div class="ss-body open" id="ss-body">
+
+      <!-- Category filters -->
       <div class="ss-controls">
-        <button class="ss-filter active" onclick="filterScreenshots('all', this)">All</button>
-        <button class="ss-filter" onclick="filterScreenshots('study', this)">Study</button>
-        <button class="ss-filter" onclick="filterScreenshots('distraction', this)">Distraction</button>
-        <button class="ss-filter" onclick="filterScreenshots('break', this)">Break</button>
+        <button class="ss-filter active" onclick="filterScreenshots('all',this)">All</button>
+        <button class="ss-filter" onclick="filterScreenshots('study',this)">Study</button>
+        <button class="ss-filter" onclick="filterScreenshots('distraction',this)">Distraction</button>
+        <button class="ss-filter" onclick="filterScreenshots('break',this)">Break</button>
         <span class="ss-count" id="ss-visible-count"></span>
       </div>
-      <div id="screenshot-feed">Loading...</div>
+
+      <!-- Time range selector -->
+      <div class="time-range-row">
+        <span class="time-range-label">Time range</span>
+        <input type="time" id="time-start" class="time-input" placeholder="From">
+        <span style="font-size:12px;color:#888780">to</span>
+        <input type="time" id="time-end" class="time-input" placeholder="To">
+        <button class="btn-apply" onclick="applyTimeRange()">Apply</button>
+        <button class="btn-clear" onclick="clearTimeRange()">Clear</button>
+      </div>
+
+      <!-- Feed -->
+      <div id="screenshot-feed"></div>
+
     </div>
   </div>
 

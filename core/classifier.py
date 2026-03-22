@@ -1,4 +1,4 @@
-from config import APP_CATEGORIES
+from core.config import APP_CATEGORIES
 
 def classify_window(window_title: str, app_name: str) -> str:
     if not window_title and not app_name:
