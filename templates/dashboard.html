@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeTrack</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div>
+      <h1>LifeTrack</h1>
+      <p id="date-str">Loading...</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="live-status">
+        <span class="live-dot" id="dot"></span>
+        <span id="live-app">Tracking...</span>
+      </div>
+      <button class="btn" onclick="loadAll()">Refresh</button>
+    </div>
+  </div>
+
+  <div class="grid4" id="metric-cards">
+    <div class="metric"><div class="metric-val">--</div><div class="metric-lbl">Real study</div></div>
+    <div class="metric"><div class="metric-val">--</div><div class="metric-lbl">Distraction</div></div>
+    <div class="metric"><div class="metric-val">--</div><div class="metric-lbl">Break</div></div>
+    <div class="metric"><div class="metric-val">--</div><div class="metric-lbl">Focus score</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="sec">LIVE ACTIVITY FEED</div>
+      <div id="activity-feed">Loading...</div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="sec">FOCUS SCORE</div>
+        <div class="ring-wrap">
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="28" fill="none" stroke="#f1efe8" stroke-width="7"/>
+            <circle id="score-ring" cx="36" cy="36" r="28" fill="none" stroke="#639922" stroke-width="7"
+              stroke-dasharray="0 176" stroke-dashoffset="44" stroke-linecap="round"
+              style="transition:stroke-dasharray .8s ease"/>
+            <text id="score-text" x="36" y="41" text-anchor="middle" font-size="15" font-weight="700" fill="#1a1a18">--</text>
+          </svg>
+          <div>
+            <div class="ring-big" id="score-big">--<span style="font-size:18px;color:#888780">/100</span></div>
+            <div class="ring-sub" id="score-label">Loading...</div>
+          </div>
+        </div>
+        <div class="sec">BEHAVIOR FLAGS</div>
+        <div id="flags">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLAPSIBLE AI SCREENSHOT SECTION -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="ss-header" onclick="toggleScreenshots()">
+      <div class="sec" style="margin:0">AI SCREENSHOT DESCRIPTIONS — WHAT YOU ACTUALLY DID TODAY</div>
+      <div class="ss-toggle">
+        <span id="ss-count-badge" style="font-size:11px;color:#888780"></span>
+        <span id="ss-arrow" class="ss-arrow">▼</span>
+      </div>
+    </div>
+    <div class="ss-body" id="ss-body">
+      <div class="ss-controls">
+        <button class="ss-filter active" onclick="filterScreenshots('all', this)">All</button>
+        <button class="ss-filter" onclick="filterScreenshots('study', this)">Study</button>
+        <button class="ss-filter" onclick="filterScreenshots('distraction', this)">Distraction</button>
+        <button class="ss-filter" onclick="filterScreenshots('break', this)">Break</button>
+        <span class="ss-count" id="ss-visible-count"></span>
+      </div>
+      <div id="screenshot-feed">Loading...</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="sec">TOP APPS TODAY</div>
+      <div id="top-apps">Loading...</div>
+    </div>
+    <div class="card">
+      <div class="sec">AI COACH</div>
+      <div class="ai-box" id="ai-report">Loading...</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px">
+    <div class="sec">14-DAY STUDY TREND</div>
+    <div style="position:relative;height:180px"><canvas id="weekChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="sec">FOCUS SCORE OVER TIME</div>
+    <div style="position:relative;height:160px"><canvas id="scoreChart"></canvas></div>
+  </div>
+
+</div>
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>

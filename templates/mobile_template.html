@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="LifeTrack">
+<title>LifeTrack Mobile</title>
+<link rel="stylesheet" href="/static/css/mobile.css">
+</head>
+<body>
+
+<div class="header">
+  <h1>LifeTrack</h1>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span class="online-dot" id="dot"></span>
+    <span id="conn-status">Connecting...</span>
+  </div>
+</div>
+
+<div id="sync-bar"></div>
+
+<div class="page active" id="page-capture">
+  <div class="section">
+    <div class="sec">QUICK CAPTURE</div>
+    <button class="big-btn btn-dark" onclick="startVoice()">
+      <span style="font-size:20px">🎙</span> Voice note
+    </button>
+    <div class="recording" id="rec-box">
+      <div><span class="rec-dot"></span><span style="font-size:13px;color:#A32D2D;font-weight:500">Recording...</span></div>
+      <div class="rec-time" id="rec-timer">0:00</div>
+      <button class="stop-btn" onclick="stopVoice()">Stop and Save</button>
+    </div>
+    <div class="sec" style="margin-top:16px">MOOD CHECK-IN</div>
+    <div class="mood-grid">
+      <div class="mood-btn" onclick="selectMood('great',this)"><div style="font-size:28px">😄</div><div class="mood-lbl">Great</div></div>
+      <div class="mood-btn" onclick="selectMood('okay',this)"><div style="font-size:28px">😐</div><div class="mood-lbl">Okay</div></div>
+      <div class="mood-btn" onclick="selectMood('bad',this)"><div style="font-size:28px">😞</div><div class="mood-lbl">Bad</div></div>
+      <div class="mood-btn" onclick="selectMood('focused',this)"><div style="font-size:28px">🎯</div><div class="mood-lbl">Focused</div></div>
+      <div class="mood-btn" onclick="selectMood('tired',this)"><div style="font-size:28px">😴</div><div class="mood-lbl">Tired</div></div>
+      <div class="mood-btn" onclick="selectMood('stressed',this)"><div style="font-size:28px">😤</div><div class="mood-lbl">Stressed</div></div>
+    </div>
+    <div class="sec">QUICK NOTE</div>
+    <div class="card" style="padding:12px">
+      <textarea id="note-input" placeholder="What are you doing? Where are you?" rows="3"></textarea>
+      <button class="submit-btn" onclick="saveNote()">Save note</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-today">
+  <div class="section">
+    <div class="sec">TODAY AT A GLANCE</div>
+    <div class="grid2" id="mobile-stats">
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Study time</div></div>
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Focus score</div></div>
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Distraction</div></div>
+      <div class="metric"><div class="metric-val" style="color:#888780">--</div><div class="metric-lbl">Break</div></div>
+    </div>
+    <div class="sec">WHAT YOU DID TODAY</div>
+    <div class="card" id="mobile-descriptions">
+      <div class="empty">Connect to WiFi to load.</div>
+    </div>
+    <div class="sec" style="margin-top:14px">AI COACH</div>
+    <div class="card" style="padding:0">
+      <div class="ai-box" id="mobile-ai">Connect to WiFi to load your coaching report.</div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-queue">
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="sec" style="margin:0">OFFLINE QUEUE</div>
+      <button onclick="syncNow()" class="btn-sm">Sync now</button>
+    </div>
+    <div class="card" id="queue-list">
+      <div class="empty">No pending items.</div>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="showPage('capture',this)">
+    <span class="nav-icon">+</span>Capture
+  </button>
+  <button class="nav-btn" onclick="showPage('today',this)">
+    <span class="nav-icon">📊</span>Today
+  </button>
+  <button class="nav-btn" onclick="showPage('queue',this)">
+    <span class="nav-icon">☁</span>Queue
+  </button>
+</div>
+
+<script src="/static/js/mobile.js"></script>
+</body>
+</html>
