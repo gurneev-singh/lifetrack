@@ -1,15 +1,22 @@
-# LifeTrack - main.py (v2 - with screenshot AI analysis)
+# LifeTrack - main.py
+# Entry point. Starts all tracking threads.
+# Usage: python main.py
+# Usage: python main.py --report
+
 import sys
 import threading
 import schedule
 import time
 from datetime import datetime
-from core.database import init_db, log_screenshot
+
+from core.database import init_db, log_screenshot, log_webcam
 from features.tracking.tracker import run_tracker
-from features.reporting.reporter import generate_daily_report
 from features.tracking.screenshot_analyzer import run_screenshot_analyzer
-from core.privacy import start_hotkey_listener, is_night_time
+from features.tracking.webcam_analyzer import run_webcam_analyzer, release_camera
+from features.reporting.reporter import generate_daily_report
+from core.privacy import start_hotkey_listener
 from core.config import REPORT_HOUR, REPORT_MINUTE
+
 
 def schedule_daily_report():
     t = f"{REPORT_HOUR:02d}:{REPORT_MINUTE:02d}"
@@ -19,12 +26,13 @@ def schedule_daily_report():
         schedule.run_pending()
         time.sleep(30)
 
+
 def main():
     print("""
 ==========================================
-        LIFETRACK v2.0
-   Now with AI screenshot analysis
-   Win+Shift+P to pause screenshots
+        LIFETRACK v2.1
+   Screen + Webcam AI analysis
+   Win+Shift+P to pause all capture
 ==========================================
     """)
 
@@ -37,29 +45,39 @@ def main():
     print(f"[Main] Started at {datetime.now().strftime('%H:%M:%S')}")
     print("[Main] Ctrl+C to stop and generate report.\n")
 
-    # Start hotkey listener (Win+Shift+P to pause)
+    # Privacy hotkey
     start_hotkey_listener()
 
-    # Start window title tracker (fallback)
+    # Window title tracker (fallback)
     threading.Thread(target=run_tracker, daemon=True).start()
 
-    # Start screenshot AI analyzer (main tracking)
+    # Screen AI analyzer
     threading.Thread(
         target=run_screenshot_analyzer,
         args=(log_screenshot,),
         daemon=True
     ).start()
 
-    # Start scheduler
+    # Webcam AI analyzer
+    threading.Thread(
+        target=run_webcam_analyzer,
+        args=(log_webcam,),
+        daemon=True
+    ).start()
+
+    # Daily report scheduler
     threading.Thread(target=schedule_daily_report, daemon=True).start()
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\n[Main] Generating final report...")
+        print("\n[Main] Stopping — releasing camera...")
+        release_camera()
+        print("[Main] Generating final report...")
         generate_daily_report(print_to_terminal=True)
         print("[Main] Done. See you tomorrow.")
+
 
 if __name__ == "__main__":
     main()

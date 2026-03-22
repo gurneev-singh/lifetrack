@@ -6,7 +6,7 @@ from flask import Flask, jsonify, render_template, request
 import sqlite3
 from datetime import datetime, timedelta
 from core.config import DB_PATH
-
+from features.tracking.cross_verify import cross_verify_today
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -241,6 +241,28 @@ def table_exists(conn, name):
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (name,)
     ).fetchone()
     return row is not None
+
+@app.route("/api/webcam")
+def api_webcam():
+    """Get today's webcam entries for dashboard."""
+    from core.database import get_webcam_today
+    try:
+        rows = get_webcam_today(limit=100)
+        return jsonify([{
+            "timestamp": r["timestamp"],
+            "description": r["description"],
+            "physical": r["physical"]
+        } for r in rows])
+    except Exception as e:
+        return jsonify([])
+ 
+@app.route("/api/crossverify")
+def api_crossverify():
+    """Get cross-verification truth analysis."""
+    try:
+        return jsonify(cross_verify_today())
+    except Exception as e:
+        return jsonify({"available": False, "reason": str(e)})
 
 # ─── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

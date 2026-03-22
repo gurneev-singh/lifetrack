@@ -72,6 +72,18 @@ def init_db():
             duration  INTEGER
         )
     """)
+
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS webcam_log (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp         TEXT NOT NULL,
+            date              TEXT NOT NULL,
+            hour              INTEGER NOT NULL,
+            description       TEXT,
+            physical          TEXT
+        )
+    ''')
+    
     conn.commit()
     conn.close()
     print("[DB] Database ready.")
@@ -247,3 +259,32 @@ def get_week_summary():
     ).fetchall()
     conn.close()
     return rows
+
+def log_webcam(description, physical):
+    """Save webcam AI analysis. Frame is never stored — only text."""
+    from datetime import datetime
+    now = datetime.now()
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO webcam_log
+            (timestamp, date, hour, description, physical)
+        VALUES (?, ?, ?, ?, ?)
+    """, (now.isoformat(), now.strftime("%Y-%m-%d"), now.hour,
+          description, physical))
+    conn.commit()
+    conn.close()
+ 
+ 
+def get_webcam_today(limit=50):
+    """Get today's webcam entries."""
+    from datetime import datetime
+    today = datetime.now().strftime("%Y-%m-%d")
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT timestamp, description, physical
+        FROM webcam_log WHERE date=?
+        ORDER BY timestamp DESC LIMIT ?
+    """, (today, limit)).fetchall()
+    conn.close()
+    return rows
+
