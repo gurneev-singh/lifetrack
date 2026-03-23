@@ -115,6 +115,7 @@ async function loadToday() {
         <div class="metric"><div class="metric-val" style="color:#A32D2D">${d.distraction_fmt}</div><div class="metric-lbl">Distraction</div></div>
         <div class="metric"><div class="metric-val" style="color:#854F0B">${d.break_fmt}</div><div class="metric-lbl">Break</div></div>
         <div class="metric"><div class="metric-val" style="color:#534AB7">${d.focus_score}/100</div><div class="metric-lbl">Focus score</div></div>
+        <div class="metric" id="truth-card" title="Matches between what apps you used and what the webcam saw."><div class="metric-val" id="truth-val">--</div><div class="metric-lbl">Truth score</div></div>
     `;
 
     const filled = (d.focus_score/100)*176;

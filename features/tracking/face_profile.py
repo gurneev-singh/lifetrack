@@ -103,34 +103,45 @@ def complete_registration(cap):
     print("[Face] Starting face capture — look at the camera...")
 
     for attempt in range(50):
-        ret, frame = cap.read()
-        if not ret or frame is None:
-            time.sleep(0.3)
-            continue
+        try:
+            ret, frame = cap.read()
+            if not ret or frame is None:
+                time.sleep(0.3)
+                continue
 
-        frame = np.array(frame, dtype=np.uint8)
-        rgb   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        rgb   = np.ascontiguousarray(rgb, dtype=np.uint8)
+            # Basic validation
+            if not hasattr(frame, 'shape') or len(frame.shape) != 3:
+                print(f"[Face] Invalid frame shape: {getattr(frame, 'shape', 'None')}")
+                continue
 
-        locs = face_recognition.face_locations(rgb, model="hog")
-        if not locs:
-            time.sleep(0.3)
-            continue
+            frame = np.array(frame, dtype=np.uint8)
+            rgb   = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb   = np.ascontiguousarray(rgb, dtype=np.uint8)
 
-        encs = face_recognition.face_encodings(rgb, locs)
-        if not encs:
-            continue
+            locs = face_recognition.face_locations(rgb, model="hog")
+            if not locs:
+                time.sleep(0.3)
+                continue
 
-        encodings.append(encs[0])
-        photos_taken += 1
-        print(f"[Face] Captured {photos_taken}/10...")
+            encs = face_recognition.face_encodings(rgb, locs)
+            if not encs:
+                continue
 
-        photo_path = os.path.join(PHOTOS_DIR, f"face_{photos_taken:02d}.jpg")
-        cv2.imwrite(photo_path, frame)
+            encodings.append(encs[0])
+            photos_taken += 1
+            print(f"[Face] Captured {photos_taken}/10...")
 
-        if photos_taken >= 10:
-            break
-        time.sleep(0.4)
+            photo_path = os.path.join(PHOTOS_DIR, f"face_{photos_taken:02d}.jpg")
+            cv2.imwrite(photo_path, frame)
+
+            if photos_taken >= 10:
+                break
+            time.sleep(0.4)
+        except Exception as e:
+            print(f"[Face] Capture attempt {attempt} error: {e}")
+            if "Unsupported image type" in str(e):
+                print(f"[Face] DEBUG: rgb.shape={rgb.shape}, rgb.dtype={rgb.dtype}")
+            time.sleep(0.5)
 
     if photos_taken < 5:
         result = {

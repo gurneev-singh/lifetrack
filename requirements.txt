@@ -1,6 +1,6 @@
 # LifeTrack Dependencies
 opencv-python
-numpy
+numpy==1.26.4
 groq
 Pillow
 pygetwindow
