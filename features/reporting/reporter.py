@@ -2,6 +2,7 @@ from datetime import datetime
 from core.config import GROQ_API_KEY, GROQ_MODEL
 from core.database import (get_today_minutes_by_category, get_top_apps_today,
                       get_top_distractions_today, save_daily_summary)
+from features.tracking.cross_verify import cross_verify_today
 
 def fmt(minutes):
     if minutes < 60:
@@ -14,7 +15,7 @@ def focus_score(study, distract, total):
     score = int((study/total - (distract/total)*0.5) * 100)
     return max(0, min(100, score))
 
-def get_ai_coaching(study, distract, break_t, idle, score, top_apps, top_dist):
+def get_ai_coaching(study, distract, break_t, idle, score, top_apps, top_dist, truth_score):
     if GROQ_API_KEY == "your_groq_api_key_here":
         return "Add your Groq API key in config.py to get AI coaching."
     try:
@@ -30,10 +31,11 @@ Today:
 - Break: {fmt(break_t)}
 - Idle: {fmt(idle)}
 - Focus score: {score}/100
+- Physical Truth Score: {truth_score}% (Matches between screen activity and webcam presence)
 - Top apps: {apps or 'none'}
 - Top distractions: {dist or 'none'}
 
-Write 4-5 sentences: one thing done well, one habit that hurt, one action for tomorrow, MIT reminder. Be direct. Use real numbers."""
+Write 4-5 sentences: one thing done well, one habit that hurt (mention truth score if low), one action for tomorrow, MIT reminder. Be direct. Use real numbers."""
         r = client.chat.completions.create(
             model=GROQ_MODEL,
             messages=[{"role": "user", "content": prompt}],
@@ -58,7 +60,12 @@ def generate_daily_report(print_to_terminal=True):
 
     top_app  = apps[0]["app"] if apps else "none"
     top_dis  = dist[0]["app"] if dist else "none"
-    ai       = get_ai_coaching(study, distract, break_t, idle, score, list(apps), list(dist))
+    
+    # Get Truth Score from webcam/cross-verification
+    cv_data = cross_verify_today()
+    truth_score = cv_data.get("truth_score", 100) if cv_data.get("available") else 100
+
+    ai = get_ai_coaching(study, distract, break_t, idle, score, list(apps), list(dist), truth_score)
 
     save_daily_summary(today, study, distract, break_t, idle, score, top_app, top_dis, ai)
 

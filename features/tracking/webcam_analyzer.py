@@ -1,16 +1,15 @@
 # LifeTrack - features/tracking/webcam_analyzer.py
-# Captures one webcam frame every 60 seconds.
-# Sends to Groq vision, saves description only.
-# Frame is NEVER saved to disk.
-
 import cv2
 import base64
 import time
 import threading
+import numpy as np
 from datetime import datetime
 from groq import Groq
 from core.config import GROQ_API_KEY, WEBCAM_INTERVAL
 from core.privacy import is_paused, is_night_time
+from features.tracking.face_profile import is_me, load_face_profile, is_registered
+from features.tracking.tracker import is_idle
 
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY != "your_groq_api_key_here" else None
 
@@ -19,35 +18,34 @@ Be specific and concise — one sentence only.
 Also classify into exactly one of: present / away / distracted / tired / break
 
 Definitions:
-- present = at desk, looking at screen, focused
-- away = not visible, left the room
-- distracted = at desk but looking at phone, looking away from screen frequently
-- tired = head drooping, slouched, eyes closing
+- present = at desk, looking at screen, focused, or thinking (even with hand on head)
+- away = not visible, left the room, chair empty
+- distracted = at desk but phone clearly visible in hand, or completely turned away from screen
+- tired = head drooping, slouched heavily, eyes clearly closing
 - break = eating, drinking, stretching
 
 Examples:
 - "Person sitting upright at desk, focused on screen — present"
+- "Person sitting with hand on head, facing screen, thinking — present"
+- "Person at desk looking slightly away but no phone visible — present"
+- "Person leaning back in chair, looking at screen — present"
+- "Person scratching head while looking at screen — present"
 - "Person not visible, chair empty — away"
-- "Person at desk holding phone, not looking at screen — distracted"
-- "Person slouched, head resting on hand, appears tired — tired"
+- "Person at desk with phone clearly in hand, not looking at screen — distracted"
+- "Person completely turned away from screen, using phone — distracted"
+- "Person slouched heavily, eyes closing, head drooping — tired"
 - "Person eating at desk — break"
-
-If the image is dark or unclear, respond with:
-DESCRIPTION: Camera image unclear
-PHYSICAL: away
 
 Respond in EXACTLY this format:
 DESCRIPTION: <one sentence>
 PHYSICAL: <present/away/distracted/tired/break>
 """
 
-# ─── Webcam capture ───────────────────────────────────────────────────────────
-
 _cap = None
 _cap_lock = threading.Lock()
 
+
 def get_camera():
-    """Get or initialize webcam. Returns VideoCapture or None."""
     global _cap
     with _cap_lock:
         if _cap is None or not _cap.isOpened():
@@ -57,46 +55,34 @@ def get_camera():
                 _cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
                 print("[Webcam] Camera initialized.")
             else:
-                print("[Webcam] Could not open webcam. Check if camera is connected.")
+                print("[Webcam] Could not open webcam.")
                 _cap = None
         return _cap
 
+
 def capture_frame():
-    """Capture one frame from webcam. Returns base64 string or None."""
     cap = get_camera()
     if cap is None:
-        return None
+        return None, None
     try:
-        # Discard a few frames so camera adjusts exposure
         for _ in range(3):
             cap.read()
         ret, frame = cap.read()
         if not ret or frame is None:
-            return None
-
-        # Encode to JPEG in memory — never saved to disk
+            return None, None
         ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
         if not ret:
-            return None
-
+            return None, None
         b64 = base64.standard_b64encode(buffer.tobytes()).decode('utf-8')
-
-        # Explicitly delete frame from memory
-        del frame
-        del buffer
-        return b64
-
+        return frame, b64
     except Exception as e:
         print(f"[Webcam] Capture error: {e}")
-        return None
+        return None, None
 
-# ─── Groq vision analysis ─────────────────────────────────────────────────────
 
 def analyze_frame(b64_image: str) -> dict:
-    """Send frame to Groq vision. Returns description and physical category."""
     if client is None:
         return {"description": "API key not set", "physical": "unknown"}
-
     try:
         response = client.chat.completions.create(
             model="meta-llama/llama-4-scout-17b-16e-instruct",
@@ -111,11 +97,9 @@ def analyze_frame(b64_image: str) -> dict:
             }],
             max_tokens=80
         )
-
         text = response.choices[0].message.content.strip()
         description = "Unknown"
         physical = "unknown"
-
         for line in text.split("\n"):
             if line.startswith("DESCRIPTION:"):
                 description = line.replace("DESCRIPTION:", "").strip()
@@ -123,45 +107,58 @@ def analyze_frame(b64_image: str) -> dict:
                 physical = line.replace("PHYSICAL:", "").strip().lower()
                 if physical not in ["present", "away", "distracted", "tired", "break"]:
                     physical = "unknown"
-
         return {"description": description, "physical": physical}
-
     except Exception as e:
         print(f"[Webcam] API error: {e}")
         return {"description": "API error", "physical": "unknown"}
 
-# ─── Main loop ────────────────────────────────────────────────────────────────
 
 def run_webcam_analyzer(db_log_fn):
-    """
-    Main loop. Runs in background thread.
-    db_log_fn = core.database.log_webcam
-    """
     print(f"[Webcam] Started. Analyzing every {WEBCAM_INTERVAL}s...")
+
+    if is_registered():
+        load_face_profile()
+    else:
+        print("[Webcam] No face profile — register via dashboard.")
 
     while True:
         try:
-            # Skip if paused or night time
-            if is_paused():
-                print(f"[{datetime.now().strftime('%H:%M')}] [Webcam] Paused — skipping")
+            # Check for registration request first
+            from features.tracking.face_profile import is_registration_requested, complete_registration
+            if is_registration_requested():
+                print("[Webcam] Registration requested — capturing face...")
+                complete_registration(get_camera())
+                print("[Webcam] Registration complete.")
+                continue
+
+            if is_paused() or is_night_time() or is_idle():
                 time.sleep(WEBCAM_INTERVAL)
                 continue
 
-            if is_night_time():
+            frame_bgr, b64 = capture_frame()
+            if frame_bgr is None:
                 time.sleep(WEBCAM_INTERVAL)
                 continue
 
-            # Capture frame
-            b64 = capture_frame()
+            # Face recognition check
+            if is_registered():
+                frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+                frame_rgb = np.ascontiguousarray(frame_rgb, dtype=np.uint8)
+                if not is_me(frame_rgb):
+                    print(f"[{datetime.now().strftime('%H:%M')}] [Webcam] SKIPPED — unknown person")
+                    del frame_bgr, frame_rgb, b64
+                    time.sleep(WEBCAM_INTERVAL)
+                    continue
+                del frame_rgb
+
             if b64 is None:
+                del frame_bgr
                 time.sleep(WEBCAM_INTERVAL)
                 continue
 
-            # Analyze
             result = analyze_frame(b64)
-            del b64  # delete from memory immediately
+            del b64
 
-            # Save to database
             db_log_fn(
                 description=result["description"],
                 physical=result["physical"]
@@ -176,7 +173,6 @@ def run_webcam_analyzer(db_log_fn):
 
 
 def release_camera():
-    """Release webcam when stopping."""
     global _cap
     with _cap_lock:
         if _cap is not None:

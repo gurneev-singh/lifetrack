@@ -28,6 +28,15 @@ def schedule_daily_report():
 
 
 def main():
+    show_dashboard = True
+    if "--no-dashboard" in sys.argv:
+        show_dashboard = False
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--report":
+        init_db()
+        generate_daily_report(print_to_terminal=True)
+        return
+
     print("""
 ==========================================
         LIFETRACK v2.1
@@ -36,12 +45,17 @@ def main():
 ==========================================
     """)
 
-    if len(sys.argv) > 1 and sys.argv[1] == "--report":
-        init_db()
-        generate_daily_report(print_to_terminal=True)
-        return
-
     init_db()
+    
+    if show_dashboard:
+        from features.dashboard.server import app
+        def run_server():
+            # Disable the debugger and reloader to avoid issues with threading
+            app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+        
+        threading.Thread(target=run_server, daemon=True).start()
+        print("[Main] Dashboard started at http://localhost:5000")
+
     print(f"[Main] Started at {datetime.now().strftime('%H:%M:%S')}")
     print("[Main] Ctrl+C to stop and generate report.\n")
 

@@ -1,7 +1,7 @@
 let weekChart, scoreChart;
 let allScreenshots = [];
 let currentFilter = 'all';
-let ssExpanded = true;  // starts OPEN
+let ssExpanded = true;
 let showAll = false;
 let timeRangeStart = null;
 let timeRangeEnd = null;
@@ -28,16 +28,12 @@ function catBadgeClass(cat) {
     return {study:'ss-study',distraction:'ss-distraction',break:'ss-break'}[cat] || 'ss-unknown';
 }
 
-// ─── Collapsible toggle ───────────────────────────────────────────────────────
 function toggleScreenshots() {
     ssExpanded = !ssExpanded;
-    const body = document.getElementById('ss-body');
-    const arrow = document.getElementById('ss-arrow');
-    body.classList.toggle('open', ssExpanded);
-    arrow.classList.toggle('open', ssExpanded);
+    document.getElementById('ss-body').classList.toggle('open', ssExpanded);
+    document.getElementById('ss-arrow').classList.toggle('open', ssExpanded);
 }
 
-// ─── Filter buttons ───────────────────────────────────────────────────────────
 function filterScreenshots(cat, btn) {
     currentFilter = cat;
     showAll = false;
@@ -46,7 +42,6 @@ function filterScreenshots(cat, btn) {
     renderScreenshotFeed();
 }
 
-// ─── Time range filter ────────────────────────────────────────────────────────
 function applyTimeRange() {
     timeRangeStart = document.getElementById('time-start').value;
     timeRangeEnd   = document.getElementById('time-end').value;
@@ -62,13 +57,12 @@ function clearTimeRange() {
     renderScreenshotFeed();
 }
 
-// ─── Render screenshot feed ───────────────────────────────────────────────────
 function renderScreenshotFeed() {
-    const el       = document.getElementById('screenshot-feed');
-    const countEl  = document.getElementById('ss-visible-count');
+    const el      = document.getElementById('screenshot-feed');
+    const countEl = document.getElementById('ss-visible-count');
 
     if (!allScreenshots.length) {
-        el.innerHTML = '<div class="empty">No AI descriptions yet. Make sure main.py is running with the screenshot analyzer.</div>';
+        el.innerHTML = '<div class="empty">No AI descriptions yet. Make sure main.py is running.</div>';
         countEl.textContent = '';
         return;
     }
@@ -77,36 +71,25 @@ function renderScreenshotFeed() {
         ? allScreenshots
         : allScreenshots.filter(s => s.category === currentFilter);
 
-    // Apply time range
-    if (timeRangeStart) {
-        filtered = filtered.filter(s => {
-            const t = s.timestamp ? s.timestamp.substring(11,16) : '00:00';
-            return t >= timeRangeStart;
-        });
-    }
-    if (timeRangeEnd) {
-        filtered = filtered.filter(s => {
-            const t = s.timestamp ? s.timestamp.substring(11,16) : '23:59';
-            return t <= timeRangeEnd;
-        });
-    }
+    if (timeRangeStart) filtered = filtered.filter(s => (s.timestamp||'').substring(11,16) >= timeRangeStart);
+    if (timeRangeEnd)   filtered = filtered.filter(s => (s.timestamp||'').substring(11,16) <= timeRangeEnd);
 
     const visible = showAll ? filtered : filtered.slice(0, SHOW_LIMIT);
     countEl.textContent = filtered.length + ' entries';
 
-    if (visible.length === 0) {
+    if (!visible.length) {
         el.innerHTML = '<div class="empty">No entries match this filter.</div>';
         return;
     }
 
     el.innerHTML = visible.map(s => {
-        const time = s.timestamp ? s.timestamp.substring(11,16) : '';
+        const time = (s.timestamp||'').substring(11,16);
         return `<div class="ss-row">
             <span class="ss-time">${time}</span>
             <span class="ss-badge ${catBadgeClass(s.category)}">${s.category}</span>
             <div>
                 <div class="ss-desc">${s.description}</div>
-                <div class="ss-app">${s.app || ''}</div>
+                <div class="ss-app">${s.app||''}</div>
             </div>
         </div>`;
     }).join('');
@@ -121,7 +104,6 @@ function renderScreenshotFeed() {
 function expandAll()  { showAll = true;  renderScreenshotFeed(); }
 function collapseAll(){ showAll = false; renderScreenshotFeed(); }
 
-// ─── Load today ───────────────────────────────────────────────────────────────
 async function loadToday() {
     const r = await fetch('/api/today');
     const d = await r.json();
@@ -141,7 +123,6 @@ async function loadToday() {
     document.getElementById('score-big').innerHTML = `${d.focus_score}<span style="font-size:18px;color:#888780">/100</span>`;
     document.getElementById('score-label').textContent = scoreLabel(d.focus_score);
 
-    // Activity feed
     const feed = document.getElementById('activity-feed');
     if (!d.timeline || !d.timeline.length) {
         feed.innerHTML = '<div class="empty">No data yet — start the tracker.</div>';
@@ -164,7 +145,6 @@ async function loadToday() {
         }).join('');
     }
 
-    // Flags
     const f = d.flags;
     document.getElementById('flags').innerHTML = `
         <div class="flag-row"><span class="flag-text">Late nights this week</span><span class="badge ${f.late_nights>2?'bad':f.late_nights>0?'warn':'good'}">${f.late_nights} nights</span></div>
@@ -172,7 +152,6 @@ async function loadToday() {
         <div class="flag-row"><span class="flag-text">Weekly study total</span><span class="badge ${f.weekly_study_mins>600?'good':f.weekly_study_mins>300?'warn':'bad'}">${fmt(f.weekly_study_mins)}</span></div>
     `;
 
-    // Top apps
     const maxMins = d.top_apps.length ? d.top_apps[0].mins : 1;
     document.getElementById('top-apps').innerHTML = d.top_apps.length
         ? d.top_apps.map((a,i) => `
@@ -186,7 +165,6 @@ async function loadToday() {
     document.getElementById('ai-report').textContent = d.ai_report;
 }
 
-// ─── Load screenshots ─────────────────────────────────────────────────────────
 async function loadScreenshots() {
     try {
         const r = await fetch('/api/screenshots?limit=200');
@@ -194,13 +172,12 @@ async function loadScreenshots() {
         document.getElementById('ss-count-badge').textContent =
             allScreenshots.length ? allScreenshots.length + ' entries' : '';
         renderScreenshotFeed();
-    } catch(e) {
+    } catch {
         document.getElementById('screenshot-feed').innerHTML =
             '<div class="empty">Could not load screenshot data.</div>';
     }
 }
 
-// ─── Load weekly charts ───────────────────────────────────────────────────────
 async function loadWeekly() {
     const r = await fetch('/api/weekly');
     const data = await r.json();
@@ -252,14 +229,122 @@ async function loadLive() {
     } catch {}
 }
 
-async function loadAll() {
-    await Promise.all([loadToday(), loadScreenshots(), loadWeekly(), loadLive()]);
+async function loadCrossVerify() {
+    try {
+        const r = await fetch('/api/crossverify');
+        const d = await r.json();
+        const el = document.getElementById('truth-val');
+        if (d.available) {
+            el.textContent = d.truth_score + '%';
+            el.style.color = d.truth_score >= 80 ? '#3B6D11' : d.truth_score >= 50 ? '#854F0B' : '#A32D2D';
+        } else {
+            el.textContent = '--';
+        }
+    } catch {
+        document.getElementById('truth-val').textContent = 'Error';
+    }
 }
 
-// Init — open section immediately
-window.onload = function() {
-    loadAll();
-};
+async function loadWebcam() {
+    const el = document.getElementById('webcam-feed');
+    try {
+        const r = await fetch('/api/webcam');
+        const data = await r.json();
+        if (!data || !data.length) {
+            el.innerHTML = '<div class="empty">No physical data yet.</div>';
+            return;
+        }
 
+        const physicalCls = {present:'ss-study', away:'ss-break', distracted:'ss-distraction', tired:'ss-unknown', break:'ss-break'};
+
+        el.innerHTML = data.slice(0, 12).map(w => {
+            const time = w.timestamp ? w.timestamp.substring(11, 16) : '';
+            const cls = physicalCls[w.physical] || 'ss-unknown';
+            return `<div class="feed-row">
+                <span class="feed-time">${time}</span>
+                <span class="ss-badge ${cls}">${w.physical}</span>
+                <div><div class="ss-desc">${w.description}</div></div>
+            </div>`;
+        }).join('');
+    } catch {
+        el.innerHTML = '<div class="empty">Error loading webcam data.</div>';
+    }
+}
+
+async function loadFaceStatus() {
+    try {
+        const r = await fetch('/api/face/status');
+        const d = await r.json();
+        document.getElementById('face-indicator').style.background = d.registered ? '#639922' : '#E24B4A';
+        document.getElementById('face-status-text').textContent = d.registered
+            ? `Face registered — ${d.encoding_count} encodings. Webcam only logs when it sees you.`
+            : 'No face registered — webcam logs everyone. Register to track only yourself.';
+        document.getElementById('face-btn').textContent = d.registered ? 'Re-register' : 'Register face';
+        document.getElementById('face-delete-btn').style.display = d.registered ? 'inline-block' : 'none';
+    } catch {
+        document.getElementById('face-status-text').textContent = 'Face API unavailable.';
+    }
+}
+
+async function registerFace() {
+    const btn         = document.getElementById('face-btn');
+    const progress    = document.getElementById('face-progress');
+    const progressBar = document.getElementById('face-progress-bar');
+    const progressText= document.getElementById('face-progress-text');
+
+    btn.disabled = true;
+    btn.textContent = 'Capturing...';
+    progress.style.display = 'block';
+    progressText.textContent = 'Look directly at your webcam...';
+    progressBar.style.width = '10%';
+
+    let fakeProgress = 10;
+    const fakeInterval = setInterval(() => {
+        fakeProgress = Math.min(fakeProgress + 8, 90);
+        progressBar.style.width = fakeProgress + '%';
+        progressText.textContent = `Capturing... ${Math.round(fakeProgress/10)} of 10 photos`;
+    }, 1200);
+
+    try {
+        const r = await fetch('/api/face/register', {method:'POST'});
+        const d = await r.json();
+        clearInterval(fakeInterval);
+        progressBar.style.width = '100%';
+        progressBar.style.background = d.success ? '#639922' : '#E24B4A';
+        progressText.textContent = d.message;
+        setTimeout(() => {
+            progress.style.display = 'none';
+            progressBar.style.width = '0%';
+            progressBar.style.background = '#639922';
+            loadFaceStatus();
+        }, 2500);
+    } catch {
+        clearInterval(fakeInterval);
+        progressText.textContent = 'Error — make sure server is running.';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Register face';
+}
+
+async function deleteFace() {
+    if (!confirm('Delete face profile? Webcam will log everyone until you re-register.')) return;
+    await fetch('/api/face/delete', {method:'POST'});
+    loadFaceStatus();
+}
+
+async function loadAll() {
+    await Promise.all([
+        loadToday(),
+        loadScreenshots(),
+        loadWebcam(),
+        loadCrossVerify(),
+        loadWeekly(),
+        loadLive(),
+        loadFaceStatus()
+    ]);
+}
+
+window.onload = function() { loadAll(); };
 setInterval(loadLive, 60000);
 setInterval(loadAll, 300000);

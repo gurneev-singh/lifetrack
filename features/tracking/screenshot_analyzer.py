@@ -10,7 +10,8 @@ from datetime import datetime
 from PIL import ImageGrab, Image
 from groq import Groq
 from core.config import GROQ_API_KEY, SCREENSHOT_INTERVAL
-from core.privacy import is_paused, is_blacklisted_app, get_active_app
+from core.privacy import is_paused, is_blacklisted_app
+from features.tracking.tracker import is_idle, get_active_window
 
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY != "your_groq_api_key_here" else None
 
@@ -109,6 +110,9 @@ def run_screenshot_analyzer(db_log_fn):
     """
     print(f"[Screenshot] Started. Analyzing every {SCREENSHOT_INTERVAL}s...")
 
+    last_window = None
+    last_result = None
+
     while True:
         try:
             # Skip if paused by user
@@ -117,21 +121,36 @@ def run_screenshot_analyzer(db_log_fn):
                 time.sleep(SCREENSHOT_INTERVAL)
                 continue
 
+            # Skip if idle (no input for 5 minutes)
+            if is_idle():
+                print(f"[{datetime.now().strftime('%H:%M')}] [Screenshot] IDLE — skipping AI analysis")
+                time.sleep(SCREENSHOT_INTERVAL)
+                continue
+
+            # Get current window and app
+            active_window, active_app = get_active_window()
+
             # Skip if blacklisted app is active
-            active_app = get_active_app()
             if is_blacklisted_app(active_app):
                 print(f"[{datetime.now().strftime('%H:%M')}] [Screenshot] Blacklisted app ({active_app}) — skipping")
                 time.sleep(SCREENSHOT_INTERVAL)
                 continue
 
-            # Take screenshot
-            img = capture_screenshot()
-            if img is None:
-                time.sleep(SCREENSHOT_INTERVAL)
-                continue
+            # Smart Check: If window title is same as last time, reuse the AI result
+            if active_window == last_window and last_result:
+                result = last_result
+                print(f"[{datetime.now().strftime('%H:%M')}] [Screenshot] Reusing result (Window unchanged: {active_app})")
+            else:
+                # Take screenshot
+                img = capture_screenshot()
+                if img is None:
+                    time.sleep(SCREENSHOT_INTERVAL)
+                    continue
 
-            # Analyze with AI
-            result = analyze_screenshot(img)
+                # Analyze with AI
+                result = analyze_screenshot(img)
+                last_window = active_window
+                last_result = result
 
             # Save to database (only text, never image)
             db_log_fn(

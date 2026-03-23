@@ -1,5 +1,11 @@
-psutil
+# LifeTrack Dependencies
+opencv-python
+numpy
 groq
+Pillow
+pygetwindow
 pynput
-pygetwindow; sys_platform == "win32"
+schedule
+Flask
+face_recognition
 pywin32; sys_platform == "win32"

@@ -7,6 +7,7 @@ import sqlite3
 from datetime import datetime, timedelta
 from core.config import DB_PATH
 from features.tracking.cross_verify import cross_verify_today
+from features.tracking.face_profile import delete_face_profile, get_status, is_registered
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -263,6 +264,33 @@ def api_crossverify():
         return jsonify(cross_verify_today())
     except Exception as e:
         return jsonify({"available": False, "reason": str(e)})
+
+@app.route("/api/face/status")
+def face_status():
+    from features.tracking.face_profile import get_status
+    return jsonify(get_status())
+ 
+ 
+@app.route("/api/face/register", methods=["POST"])
+def face_register():
+    from features.tracking.face_profile import request_registration, get_registration_result
+    import time
+    request_registration()
+    # Wait up to 30 seconds for main.py to complete registration
+    for _ in range(60):
+        result = get_registration_result()
+        if result is not None:
+            return jsonify(result)
+        time.sleep(0.5)
+    return jsonify({"success": False, "message": "Timed out. Make sure main.py is running."})
+ 
+ 
+ 
+@app.route("/api/face/delete", methods=["POST"])
+def face_delete():
+    from features.tracking.face_profile import delete_face_profile
+    success = delete_face_profile()
+    return jsonify({"success": success})
 
 # ─── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
