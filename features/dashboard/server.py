@@ -11,6 +11,7 @@ from features.tracking.face_profile import delete_face_profile, get_status, is_r
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from core.logger import setup_server_logging
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
@@ -18,6 +19,7 @@ app = Flask(__name__,
     template_folder=os.path.join(ROOT, 'templates'),
     static_folder=os.path.join(ROOT, 'static')
 )
+setup_server_logging(app)
 
 
 def get_conn():

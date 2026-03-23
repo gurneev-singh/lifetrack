@@ -12,6 +12,7 @@ from groq import Groq
 from core.config import GROQ_API_KEY, SCREENSHOT_INTERVAL
 from core.privacy import is_paused, is_blacklisted_app
 from features.tracking.tracker import is_idle, get_active_window
+from core.logger import log_groq
 
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY != "your_groq_api_key_here" else None
 
@@ -159,7 +160,7 @@ def run_screenshot_analyzer(db_log_fn):
                 app=active_app
             )
 
-            print(f"[{datetime.now().strftime('%H:%M')}] {result['category'].upper()} — {result['description'][:60]}")
+            log_groq("Screenshot", result['category'], result['description'][:60])
 
         except Exception as e:
             print(f"[Screenshot] Error: {e}")

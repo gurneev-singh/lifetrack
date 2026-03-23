@@ -3,6 +3,11 @@
 # Usage: python main.py
 # Usage: python main.py --report
 
+import os
+# Suppress OpenCV/MSMF warnings from terminal
+os.environ["OPENCV_LOG_LEVEL"] = "OFF"
+os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
+
 import sys
 import threading
 import schedule

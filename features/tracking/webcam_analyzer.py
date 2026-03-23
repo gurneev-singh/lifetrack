@@ -7,6 +7,7 @@ import numpy as np
 from datetime import datetime
 from groq import Groq
 from core.config import GROQ_API_KEY, WEBCAM_INTERVAL
+from core.logger import log_groq
 from core.privacy import is_paused, is_night_time
 from features.tracking.face_profile import is_me, load_face_profile, is_registered
 from features.tracking.tracker import is_idle
@@ -159,12 +160,12 @@ def run_webcam_analyzer(db_log_fn):
             result = analyze_frame(b64)
             del b64
 
-            db_log_fn(
-                description=result["description"],
-                physical=result["physical"]
-            )
-
-            print(f"[{datetime.now().strftime('%H:%M')}] [Webcam] {result['physical'].upper()} — {result['description'][:60]}")
+            if result:
+                db_log_fn(
+                    description=result["description"],
+                    physical=result["physical"]
+                )
+                log_groq("Webcam", result['physical'], result['description'][:60])
 
         except Exception as e:
             print(f"[Webcam] Error: {e}")
