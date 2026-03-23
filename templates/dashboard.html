@@ -122,7 +122,18 @@
     </div>
     <div class="card">
       <div class="sec">AI COACH</div>
-      <div class="ai-box" id="ai-report">Loading...</div>
+      <div class="ai-box" id="ai-report" style="margin-bottom:12px">Loading...</div>
+      
+      <div class="sec" style="margin-top:20px">TALK TO YOUR DATA</div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+          <div class="chat-msg ai">Hi Gurneev! Ask me anything about what you've done today.</div>
+        </div>
+        <div class="chat-input-wrap">
+          <input type="text" id="chat-input" class="chat-input" placeholder="e.g. When did I start studying?">
+          <button id="chat-send" class="chat-send" onclick="sendChatMessage()">Send</button>
+        </div>
+      </div>
     </div>
   </div>
 

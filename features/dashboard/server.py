@@ -12,6 +12,8 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from core.logger import setup_server_logging
+from groq import Groq
+from core.config import GROQ_API_KEY, GROQ_MODEL
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
@@ -293,6 +295,77 @@ def face_delete():
     from features.tracking.face_profile import delete_face_profile
     success = delete_face_profile()
     return jsonify({"success": success})
+
+
+@app.route("/api/chat", methods=["POST"])
+def api_chat():
+    """Talk to your data via AI."""
+    data = request.json
+    if not data or "message" not in data:
+        return jsonify({"error": "No message"}), 400
+        
+    user_msg = data["message"]
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    if GROQ_API_KEY == "your_groq_api_key_here":
+        return jsonify({"response": "Add your Groq API key in config.py to use chat."})
+
+    try:
+        conn = get_conn()
+        # Fetch a summary of today's activities for context
+        # 1. Screen activity
+        screen_rows = conn.execute("""
+            SELECT timestamp, app, description, category
+            FROM screenshot_log WHERE date=?
+            ORDER BY timestamp ASC
+        """, (today,)).fetchall()
+        
+        # 2. Webcam activity
+        webcam_rows = conn.execute("""
+            SELECT timestamp, description, physical
+            FROM webcam_log WHERE date=?
+            ORDER BY timestamp ASC
+        """, (today,)).fetchall()
+        
+        conn.close()
+        
+        # Prepare context for AI
+        history = []
+        for r in screen_rows:
+            ts = r["timestamp"][11:16] # HH:MM
+            history.append(f"[{ts}] Screen: {r['description']} ({r['app']})")
+            
+        for r in webcam_rows:
+            ts = r["timestamp"][11:16] # HH:MM
+            history.append(f"[{ts}] Physical: {r['description']} - {r['physical']}")
+            
+        context = "\n".join(history[-100:]) # Limit to last 100 entries for context window
+        
+        client = Groq(api_key=GROQ_API_KEY)
+        system_prompt = f"""You are Gurneev's AI assistant for LifeTrack. 
+You have access to Gurneev's activity logs for today ({today}).
+Your goal is to answer questions about his activity accurately and concisely.
+If he asks 'When did I...', look for the first/last occurrence in the logs.
+Be direct and helpful.
+
+TODAY'S LOGS:
+{context}
+"""
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_msg}
+            ],
+            max_tokens=250
+        )
+        
+        return jsonify({"response": response.choices[0].message.content.strip()})
+        
+    except Exception as e:
+        print(f"[Chat] Error: {e}")
+        return jsonify({"response": f"Sorry, I had trouble reading your logs: {e}"})
+
 
 # ─── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

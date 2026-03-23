@@ -79,3 +79,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-apply:hover{opacity:.85}
 .btn-clear{font-size:11px;padding:4px 10px;border-radius:6px;border:0.5px solid #e8e6e0;background:#fff;color:#888780;cursor:pointer}
 .btn-clear:hover{background:#f5f4f0;color:#1a1a18}
+  
+/* AI Chat */
+.chat-container { display: flex; flex-direction: column; height: 350px; margin-top: 10px; }
+.chat-messages { flex: 1; overflow-y: auto; padding-right: 10px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px; border-bottom: 0.5px solid #f5f4f0; }
+/* Scrollbar for chat */
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: #e8e6e0; border-radius: 10px; }
+
+.chat-msg { max-width: 85%; padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.5; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.chat-msg.user { align-self: flex-end; background: #639922; color: #fff; border-bottom-right-radius: 2px; }
+.chat-msg.ai { align-self: flex-start; background: #EEEDFE; color: #26215C; border-bottom-left-radius: 2px; }
+.chat-input-wrap { display: flex; gap: 8px; padding-top: 4px; }
+.chat-input { flex: 1; border: 0.5px solid #e8e6e0; border-radius: 8px; padding: 10px 14px; font-size: 13px; outline: none; transition: border-color 0.15s; }
+.chat-input:focus { border-color: #1a1a18; }
+.chat-send { background: #1a1a18; color: #fff; border: none; padding: 0 18px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500; transition: opacity 0.15s; }
+.chat-send:hover { opacity: 0.85; }
+.chat-send:disabled { opacity: 0.4; cursor: not-allowed; }

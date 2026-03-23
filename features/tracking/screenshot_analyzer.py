@@ -13,6 +13,7 @@ from core.config import GROQ_API_KEY, SCREENSHOT_INTERVAL
 from core.privacy import is_paused, is_blacklisted_app
 from features.tracking.tracker import is_idle, get_active_window
 from core.logger import log_groq
+from core.database import record_app_suggestion
 
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY != "your_groq_api_key_here" else None
 
@@ -159,6 +160,10 @@ def run_screenshot_analyzer(db_log_fn):
                 category=result["category"],
                 app=active_app
             )
+
+            # Record habit learning suggestion
+            if result["category"] != "unknown":
+                record_app_suggestion(active_app, result["category"])
 
             log_groq("Screenshot", result['category'], result['description'][:60])
 

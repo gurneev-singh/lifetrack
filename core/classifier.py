@@ -1,4 +1,5 @@
 from core.config import APP_CATEGORIES
+from core.database import get_learned_category
 
 def classify_window(window_title: str, app_name: str) -> str:
     if not window_title and not app_name:
@@ -7,6 +8,12 @@ def classify_window(window_title: str, app_name: str) -> str:
     for keyword, category in APP_CATEGORIES.items():
         if keyword in combined:
             return category
+            
+    # Fallback to learned habit if unknown
+    learned = get_learned_category(app_name)
+    if learned:
+        return learned
+        
     return "unknown"
 
 def classify_url(url: str) -> str:

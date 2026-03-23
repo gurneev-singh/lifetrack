@@ -84,6 +84,15 @@ def init_db():
         )
     ''')
     
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS app_knowledge (
+            id                INTEGER PRIMARY KEY AUTOINCREMENT,
+            app               TEXT NOT NULL,
+            suggested_cat     TEXT NOT NULL,
+            timestamp         TEXT NOT NULL
+        )
+    ''')
+    
     conn.commit()
     conn.close()
     print("[DB] Database ready.")
@@ -273,8 +282,48 @@ def log_webcam(description, physical):
           description, physical))
     conn.commit()
     conn.close()
- 
- 
+
+
+def record_app_suggestion(app, suggested_cat):
+    """Record a category suggestion from AI vision for an app."""
+    if not app or app == "Unknown":
+        return
+    now = datetime.now()
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO app_knowledge (app, suggested_cat, timestamp)
+        VALUES (?, ?, ?)
+    """, (app, suggested_cat, now.isoformat()))
+    conn.commit()
+    conn.close()
+
+
+def get_learned_category(app):
+    """
+    Get the most frequent AI-suggested category for an app.
+    Only considers the last 20 samples to adapt to habit changes.
+    """
+    if not app or app == "Unknown":
+        return None
+    conn = get_connection()
+    row = conn.execute("""
+        SELECT suggested_cat, COUNT(*) as count
+        FROM (
+            SELECT suggested_cat FROM app_knowledge
+            WHERE app=? ORDER BY timestamp DESC LIMIT 20
+        )
+        GROUP BY suggested_cat
+        ORDER BY count DESC
+        LIMIT 1
+    """, (app,)).fetchone()
+    conn.close()
+    
+    # Only return if we have a clear majority (e.g., at least 3 samples and >60%)
+    if row and row["count"] >= 3:
+        return row["suggested_cat"]
+    return None
+
+
 def get_webcam_today(limit=50):
     """Get today's webcam entries."""
     from datetime import datetime

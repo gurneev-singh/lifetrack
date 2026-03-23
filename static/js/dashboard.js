@@ -346,6 +346,48 @@ async function loadAll() {
     ]);
 }
 
-window.onload = function() { loadAll(); };
+async function sendChatMessage() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    const container = document.getElementById('chat-messages');
+    const sendBtn = document.getElementById('chat-send');
+
+    // Add user message
+    container.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+    input.value = '';
+    container.scrollTop = container.scrollHeight;
+
+    // Loading state
+    sendBtn.disabled = true;
+    const loadingId = 'loading-' + Date.now();
+    container.innerHTML += `<div class="chat-msg ai" id="${loadingId}">Thinking...</div>`;
+    container.scrollTop = container.scrollHeight;
+
+    try {
+        const r = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+        });
+        const d = await r.json();
+        document.getElementById(loadingId).textContent = d.response || d.error;
+    } catch {
+        document.getElementById(loadingId).textContent = 'Error: Could not connect to server.';
+    } finally {
+        sendBtn.disabled = false;
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+window.onload = function() { 
+    loadAll();
+    
+    // Add event listener for Enter key on chat input
+    document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendChatMessage();
+    });
+};
 setInterval(loadLive, 60000);
 setInterval(loadAll, 300000);
