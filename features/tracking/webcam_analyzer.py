@@ -6,7 +6,7 @@ import threading
 import numpy as np
 from datetime import datetime
 from groq import Groq
-from core.config import GROQ_API_KEY, WEBCAM_INTERVAL
+from core.config import GROQ_API_KEY, WEBCAM_INTERVAL, NIGHT_STOP_HOUR
 from core.logger import log_groq
 from core.privacy import is_paused, is_night_time
 from features.tracking.face_profile import is_me, load_face_profile, is_registered
@@ -70,6 +70,7 @@ def capture_frame():
             cap.read()
         ret, frame = cap.read()
         if not ret or frame is None:
+            print("[Webcam] Failed to read frame from camera.")
             return None, None
         ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
         if not ret:
@@ -133,6 +134,15 @@ def run_webcam_analyzer(db_log_fn):
                 continue
 
             if is_paused() or is_night_time() or is_idle():
+                if is_paused():
+                    print(f"[{datetime.now().strftime('%H:%M')}] [Webcam] PAUSED — skipping analysis")
+                elif is_night_time():
+                    print(f"[{datetime.now().strftime('%H:%M')}] [Webcam] NIGHT MODE ({datetime.now().hour} >= {NIGHT_STOP_HOUR}) — skipping analysis")
+                elif is_idle():
+                    # Only log idle occasionally to avoid spam
+                    if int(time.time()) % 300 < WEBCAM_INTERVAL:
+                        print(f"[{datetime.now().strftime('%H:%M')}] [Webcam] IDLE — skipping analysis")
+                
                 time.sleep(WEBCAM_INTERVAL)
                 continue
 

@@ -10,7 +10,7 @@ from datetime import datetime
 from PIL import ImageGrab, Image
 from groq import Groq
 from core.config import GROQ_API_KEY, SCREENSHOT_INTERVAL
-from core.privacy import is_paused, is_blacklisted_app
+from core.privacy import is_paused, is_blacklisted_app, is_night_time
 from features.tracking.tracker import is_idle, get_active_window
 from core.logger import log_groq
 from core.database import record_app_suggestion
@@ -126,6 +126,13 @@ def run_screenshot_analyzer(db_log_fn):
             # Skip if idle (no input for 5 minutes)
             if is_idle():
                 print(f"[{datetime.now().strftime('%H:%M')}] [Screenshot] IDLE — skipping AI analysis")
+                time.sleep(SCREENSHOT_INTERVAL)
+                continue
+
+            # Skip if night time
+            if is_night_time():
+                from core.config import NIGHT_STOP_HOUR
+                print(f"[{datetime.now().strftime('%H:%M')}] [Screenshot] NIGHT MODE ({datetime.now().hour} >= {NIGHT_STOP_HOUR}) — skipping AI analysis")
                 time.sleep(SCREENSHOT_INTERVAL)
                 continue
 

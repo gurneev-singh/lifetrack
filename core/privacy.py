@@ -6,6 +6,7 @@ import time
 import platform
 import threading
 from datetime import datetime
+from core.config import NIGHT_STOP_HOUR, NIGHT_START_HOUR
 
 # ─── Pause state ──────────────────────────────────────────────────────────────
 _paused_until = 0
@@ -58,8 +59,6 @@ def is_blacklisted_app(app_name: str) -> bool:
 
 
 # ─── Auto night stop ──────────────────────────────────────────────────────────
-NIGHT_STOP_HOUR  = 23   # stop screenshots at 11pm
-NIGHT_START_HOUR = 7    # resume screenshots at 7am
 
 def is_night_time() -> bool:
     """Returns True during night hours when screenshots should stop."""

@@ -3,7 +3,7 @@
 > **You think you studied 6 hours today. You actually studied 2h 10m.**
 > LifeTrack tells you the truth.
 
-A free, open-source, privacy-first life analytics OS that watches your screen every 30 seconds, reads exactly what you're doing using AI vision, and gives you a brutally honest report every night.
+A free, open-source, privacy-first life analytics OS that watches your screen **and** your webcam using AI vision, cross-verifies both to generate a truth score, and gives you a brutally honest report every night.
 
 No subscription. No cloud. No screenshots stored. Ever. Your data stays on your machine forever.
 
@@ -25,18 +25,24 @@ Instead of storing:  [screenshot.png — 2MB of your screen]
 LifeTrack stores:    "Debugging Python script in VS Code — study"
 ```
 
+**And it doesn't stop at your screen.** LifeTrack also uses your webcam to verify you're *actually* at your desk. If the screen says "studying" but the camera sees you on your phone — it knows.
+
 Privacy-first by design. Not as an afterthought.
 
 ---
 
 ## What it actually does
 
-Every 30 seconds, LifeTrack reads your screen with AI and saves what you were actually doing. At the end of the day:
+Every 60 seconds, LifeTrack reads your screen **and** your webcam with AI, then cross-verifies both:
 
-- Exactly what you were doing — not just which app, but what specifically
-- Real study time vs distraction time
-- Focus score out of 100
-- AI coach that calls you out on your habits
+- **Screen AI** — not just which app, but *what specifically* you're doing
+- **Webcam AI** — are you present, away, distracted, tired, or on break?
+- **Cross-verification** — compares screen activity vs physical state to generate a truth score
+- **Face recognition** — only tracks *you*, skips strangers
+- **Smart tracking** — skips redundant AI calls when idle or the window hasn't changed
+- **Habit learning** — AI learns *your* app categories over time (YouTube for tutorials? It'll mark it as study)
+- **Activity Chat** — ask natural language questions about your day right from the dashboard
+- **AI coach** — calls you out on your habits with a brutally honest daily report
 
 ```
 ==================================================
@@ -46,10 +52,11 @@ Every 30 seconds, LifeTrack reads your screen with AI and saves what you were ac
   FOCUS SCORE: 78/100
   [████████████████░░░░]
 
-  Study            4h 20m
-  Distraction      1h 10m
-  Break               30m
-  Total            6h 00m
+  TRUTH SCORE: 85/100
+  Screen said study: 4h 20m
+  Camera confirmed:  3h 41m
+  Phone in hand:        22m
+  Away from desk:       17m
 
   WHAT YOU ACTUALLY DID TODAY
   11:46  Debugging Python script in VS Code to fix model name issue
@@ -70,26 +77,41 @@ Every 30 seconds, LifeTrack reads your screen with AI and saves what you were ac
 ## How it works
 
 ```
-Every 30 seconds:
-┌─────────────────────────────────────────────┐
-│  Screenshot taken (never saved to disk)     │
-│           │                                 │
-│           ▼                                 │
-│  Groq LLaMA 4 Scout Vision API              │
-│           │                                 │
-│           ▼                                 │
-│  "Debugging Python in VS Code — study"      │
-│           │                                 │
-│           ▼                                 │
-│  Saved to local SQLite (text only)          │
-│  Screenshot deleted from memory             │
-└─────────────────────────────────────────────┘
+Every 60 seconds — TWO parallel AI pipelines:
+
+SCREEN PIPELINE                           WEBCAM PIPELINE
+┌────────────────────────┐     ┌────────────────────────────┐
+│ Screenshot taken       │     │ Webcam frame captured      │
+│ (never saved to disk)  │     │ (never saved to disk)      │
+│         │              │     │         │                  │
+│         ▼              │     │         ▼                  │
+│ Smart check: same      │     │ Face recognition:          │
+│ window as before?      │     │ is this me?                │
+│    ├─YES→ Reuse result │     │    ├─NO→  Skip (stranger)  │
+│    └─NO → Groq AI      │     │    └─YES→ Groq AI          │
+│         │              │     │         │                  │
+│         ▼              │     │         ▼                  │
+│ "Debugging Python      │     │ "Person at desk, focused   │
+│  in VS Code — study"   │     │  on screen — present"      │
+│         │              │     │         │                  │
+│         ▼              │     │         ▼                  │
+│ Saved to SQLite        │     │ Saved to SQLite            │
+│ (text only)            │     │ (text only)                │
+└────────────────────────┘     └────────────────────────────┘
+                    │                    │
+                    ▼                    ▼
+           ┌──────────────────────────────────┐
+           │    CROSS-VERIFICATION ENGINE     │
+           │  Screen says study + Camera says │
+           │  distracted = CAUGHT             │
+           │  Generates truth score           │
+           └──────────────────────────────────┘
 
 Every night at 11pm:
 ┌─────────────────────────────────────────────┐
 │  Groq LLaMA reads your full day             │
 │  Generates brutally honest coaching report  │
-│  Calculates focus score                     │
+│  Calculates focus score + truth score       │
 └─────────────────────────────────────────────┘
 ```
 
@@ -105,32 +127,32 @@ cd lifetrack
 
 ### 2. Install dependencies
 ```bash
-pip install groq pygetwindow pynput schedule flask Pillow pyautogui
+pip install -r requirements.txt
 ```
+
+> **Note:** `face_recognition` requires [CMake](https://cmake.org/download/) and [dlib](http://dlib.net/) to be installed. On Windows, install Visual Studio Build Tools first.
 
 ### 3. Configure
 ```bash
-cp config.example.py config.py
+cp config.example.py core/config.py
 ```
 
-Open `config.py` and add your free Groq API key:
+Open `core/config.py` and add your free Groq API key:
 ```python
 GROQ_API_KEY = "your_key_here"  # free at console.groq.com
 ```
 
 ### 4. Run
-
-**Terminal 1 — tracker + AI analysis:**
 ```bash
 python main.py
 ```
 
-**Terminal 2 — web dashboard:**
-```bash
-python server.py
-```
+This starts everything in one terminal — the tracker, both AI analyzers (screen + webcam), and the web dashboard at `http://localhost:5000`.
 
-Open `http://localhost:5000` in your browser.
+**Run without dashboard:**
+```bash
+python main.py --no-dashboard
+```
 
 **Generate a report anytime:**
 ```bash
@@ -143,11 +165,53 @@ python main.py --report
 
 | Feature | How |
 |---|---|
-| Pause screenshots | `Win+Shift+P` — pauses for 5 minutes |
-| App blacklist | Add any app to `BLACKLISTED_APPS` in `privacy.py` |
-| Auto night stop | Screenshots pause at 11pm, resume at 7am |
-| No image storage | Raw screenshots deleted from memory immediately after AI analysis |
+| Pause all capture | `Win+Shift+P` — pauses for 5 minutes, press again to resume |
+| App blacklist | Add any app to `BLACKLISTED_APPS` in `core/privacy.py` |
+| Auto night stop | Capture pauses at 11pm, resumes at 7am (configurable) |
+| No image storage | Screenshots and webcam frames deleted from memory immediately after AI analysis |
 | No cloud | Everything stays on your machine. Always. |
+| Face recognition | Only tracks YOUR face — skips anyone else on camera |
+| Idle detection | Stops AI calls when no keyboard/mouse input for 5 minutes |
+| Smart tracking | Skips redundant AI calls when active window hasn't changed |
+
+---
+
+## Face registration
+
+LifeTrack uses face recognition so it only tracks **you** — if someone else sits at your desk, it won't log their activity.
+
+1. Start LifeTrack: `python main.py`
+2. Open the dashboard at `http://localhost:5000`
+3. Register your face via the dashboard UI
+4. LifeTrack captures 10 photos and builds your face profile
+5. From now on, webcam analysis only runs when it recognizes you
+
+Face data is stored locally in `data/my_face.npy`. You can delete your profile anytime from the dashboard.
+
+---
+
+## Activity Chat
+
+Talk to your data. The dashboard includes an AI chat interface (in the AI Coach card) that lets you ask natural language questions about your day:
+
+- *"When did I start studying today?"*
+- *"How much time did I spend on documentation?"*
+- *"What was the most distracting thing I did this afternoon?"*
+- *"Was I more productive in the morning or evening?"*
+
+The chat sends your daily logs to Groq as context and returns an answer grounded in your actual tracked data.
+
+---
+
+## Dynamic Habit Learning
+
+LifeTrack doesn't rely only on a hardcoded app list. It **learns from your behavior**:
+
+1. Every screenshot analysis records the AI's suggested category for the active app
+2. The system stores suggestions in the `app_knowledge` table
+3. After enough data (last 20 samples, >60% majority), the learned category overrides the default
+
+**Example:** YouTube is classified as "distraction" by default. But if you mostly watch coding tutorials, LifeTrack will learn that and start marking your YouTube time as "study."
 
 ---
 
@@ -155,7 +219,7 @@ python main.py --report
 
 LifeTrack has a mobile app that installs directly from Safari — no App Store needed.
 
-1. Run `python server.py` on your laptop
+1. Run `python main.py` on your laptop
 2. On iPhone Safari, open `http://your-laptop-ip:5000/mobile`
 3. Tap Share → Add to Home Screen
 4. Done — it's on your home screen like a real app
@@ -164,21 +228,46 @@ Features: voice notes, mood check-ins, text notes, offline queue that syncs when
 
 ---
 
-## File structure
+## Project structure
 
 ```
 lifetrack/
-├── main.py                  ← entry point, starts everything
-├── config.py                ← your settings + API key (gitignored)
-├── config.example.py        ← safe template for new users
-├── tracker.py               ← window title tracker (fallback)
-├── screenshot_analyzer.py   ← AI vision analysis every 30s
-├── privacy.py               ← pause hotkey, blacklist, night stop
-├── classifier.py            ← labels apps as study/distract/break
-├── database.py              ← all SQLite operations
-├── reporter.py              ← daily report + Groq AI coach
-├── server.py                ← Flask web dashboard + mobile API
-└── mobile.html              ← iPhone PWA
+├── main.py                          ← entry point, starts all threads
+├── config.example.py                ← safe template for new users
+├── requirements.txt                 ← all dependencies
+│
+├── core/                            ← shared infrastructure
+│   ├── config.py                    ← settings + API key (gitignored)
+│   ├── database.py                  ← all SQLite operations
+│   ├── privacy.py                   ← pause hotkey, blacklist, night stop
+│   ├── classifier.py                ← labels apps as study/distraction/break
+│   └── logger.py                    ← dual logging (Groq → file + console)
+│
+├── features/
+│   ├── tracking/
+│   │   ├── screenshot_analyzer.py   ← screen AI vision every 60s
+│   │   ├── webcam_analyzer.py       ← webcam AI analysis every 60s
+│   │   ├── face_profile.py          ← face registration + recognition
+│   │   ├── cross_verify.py          ← screen vs webcam truth score
+│   │   └── tracker.py               ← window title tracker (fallback)
+│   │
+│   ├── dashboard/
+│   │   └── server.py                ← Flask web dashboard + API
+│   │
+│   ├── reporting/
+│   │   └── reporter.py              ← daily report + Groq AI coach
+│   │
+│   └── mobile/                      ← iPhone PWA support
+│
+├── templates/
+│   ├── dashboard.html               ← web dashboard UI
+│   └── mobile.html                  ← mobile PWA interface
+│
+├── static/                          ← CSS + JS assets
+├── logs/                            ← auto-created log files
+│   ├── groq.log                     ← all AI analysis results
+│   └── server.log                   ← Flask server logs (hidden from terminal)
+└── data/                            ← face profiles + local data (gitignored)
 ```
 
 ---
@@ -187,29 +276,36 @@ lifetrack/
 
 | Layer | Tool | Why |
 |---|---|---|
-| Screen capture | `Pillow` ImageGrab | captures screen every 30s |
-| AI vision | `Groq LLaMA 4 Scout` | reads screen, free, fast |
-| Window tracking | `pygetwindow` | fallback when AI unavailable |
-| Idle detection | `pynput` | keyboard and mouse listener |
-| Browser history | `sqlite3` | reads Chrome local DB |
-| Database | `SQLite3` | zero setup, fully local |
-| AI coach | `Groq LLaMA 3.3-70b` | weekly coaching report |
-| Dashboard | `Flask` + `Chart.js` | web UI, no framework needed |
-| Mobile | PWA | installs on iPhone from Safari |
+| Screen capture | `Pillow` ImageGrab | Captures screen every 60s, never saved to disk |
+| Webcam capture | `OpenCV` | Captures webcam every 60s, never saved to disk |
+| AI vision | `Groq LLaMA 4 Scout` | Reads screen + webcam, free tier, fast inference |
+| Face recognition | `face_recognition` + `dlib` | Only tracks the registered user |
+| Window tracking | `pygetwindow` | Fallback when AI unavailable |
+| Idle detection | `pynput` | Keyboard + mouse activity listener |
+| Smart tracking | Custom | Skips AI when window unchanged or user idle |
+| Database | `SQLite3` | Zero setup, fully local, 7 tables |
+| AI coach | `Groq LLaMA 3.3-70b` | Daily coaching report |
+| Dashboard | `Flask` + `Chart.js` | Web UI with live charts |
+| Mobile | PWA | Installs on iPhone from Safari |
+| Logging | Python `logging` | Dual output — file + console for AI, file-only for server |
 
 ---
 
 ## Roadmap
 
-- [x] Laptop activity tracker
-- [x] AI screenshot analysis (sees exactly what you do)
+- [x] Screen activity tracker with AI vision
+- [x] Webcam AI analysis (present / away / distracted / tired / break)
+- [x] Face recognition (only tracks you)
+- [x] Cross-verification engine (truth score)
+- [x] Smart tracking (skip idle + unchanged windows)
 - [x] Privacy controls (pause hotkey, blacklist, night stop)
-- [x] Chrome history import
+- [x] Habit learning (AI learns your app categories over time)
 - [x] Local SQLite database
 - [x] AI coaching report via Groq
 - [x] Web dashboard with live charts
 - [x] iPhone PWA with offline sync
-- [ ] Camera integration (Android/Pi Zero as room AI eye)
+- [x] Structured logging (Groq + server logs)
+- [x] Activity Chat — natural language queries on your data
 - [ ] Raspberry Pi Zero 2W standalone device
 - [ ] macOS and Linux support
 - [ ] Weekly digest email
@@ -231,9 +327,10 @@ Rewind AI charges $19/month and stores your screenshots forever. LifeTrack is fr
 
 Pull requests welcome. Especially interested in:
 - macOS support
-- Linux support  
+- Linux support
 - Firefox history reader
 - Android app for outside-home capture
+- Activity Chat — natural language queries on historical data
 
 ---
 
@@ -243,4 +340,4 @@ MIT — use it, fork it, build on it.
 
 ---
 
-<p align="center">Built with Python in Lucknow, India</p>
+<p align="center">Built with Python in Lucknow, India 🇮🇳</p>
